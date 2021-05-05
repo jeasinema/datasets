@@ -508,8 +508,17 @@ class OrderedDatasetBuilderTest(testing.TestCase):
 
   @testing.run_in_graph_and_eager_modes()
   def test_sorted_by_key(self):
-    with self.assertRaises(NotImplementedError):
-      self.builder.as_dataset(split=splits_lib.Split.TRAIN, shuffle_files=False)
+    with self.assertRaisesWithPredicateMatch(
+        ValueError, "`shuffle_files` cannot be enabled in an ordered dataset."):
+      self.builder.as_dataset(split=splits_lib.Split.TRAIN, shuffle_files=True)
+
+    ds = self.builder.as_dataset(
+        split=splits_lib.Split.TRAIN, shuffle_files=False)
+    ds_values = list(dataset_utils.as_numpy(ds))
+    self.assertEqual(
+        [e["x"] for e in ds_values],
+        list(range(20)),
+    )
 
 
 class BuilderPickleTest(testing.TestCase):

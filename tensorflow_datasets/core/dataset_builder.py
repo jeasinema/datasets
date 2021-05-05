@@ -951,9 +951,18 @@ class FileReaderBuilder(DatasetBuilder):
       read_config=None,
       shuffle_files=False,
   ) -> tf.data.Dataset:
-    # TODO(alcastano): Disable shuffling during reading
     if self.info.disable_shuffling:
-      raise NotImplementedError
+      if read_config:
+        ## 16 is the default value so we assume that is was not specified
+        if read_config.interleave_cycle_length == 16:
+          read_config = dataclasses.replace(
+              read_config, interleave_cycle_length=1)
+        if read_config.interleave_cycle_length != 1:
+          raise ValueError(
+              "`interleave_cycle_length` must be 1 in an ordered dataset.")
+      if shuffle_files:
+        raise ValueError(
+            "`shuffle_files` cannot be enabled in an ordered dataset.")
     decode_fn = functools.partial(
         self.info.features.decode_example, decoders=decoders)
     return self._tfrecords_reader.read(
